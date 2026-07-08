@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de Prácticas 2026 - Álvaro Soto Aguilar</title>
+    <!-- Incluimos la librería oficial html2pdf para la exportación limpia a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: #3c4043;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .google-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            border-bottom: 1px solid #dadce0;
+            background: #ffffff;
+            height: 85px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .calendar-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 20px;
+            color: #1d1d1d;
+            font-weight: 500;
+        }
+
+        .calendar-logo img {
+            height: 65px;
+            width: auto;
+            object-fit: contain;
+            padding: 2px 0;
+        }
+
+        .user-pill {
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #dadce0;
+        }
+
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-google {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+            transition: background 0.1s;
+        }
+
+        .btn-google:hover {
+            background: #1557b0;
+        }
+
+        .btn-google.secondary {
+            background: #ffffff;
+            color: #1a73e8;
+            border: 1px solid #dadce0;
+            box-shadow: none;
+        }
+
+        .btn-google.secondary:hover {
+            background: #f8f9fa;
+        }
+
+        /* Main Workspace Layout */
+        .main-wrapper {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            width: 250px;
+            border-right: 1px solid #dadce0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            background: #ffffff;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 0px;
+            padding: 0;
+            overflow: hidden;
+            border-right: none;
+        }
+
+        .sidebar-clock {
+            font-size: 28px;
+            font-weight: 400;
+            color: #1a73e8;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-date {
+            font-size: 13px;
+            color: #70757a;
+            margin-top: 2px;
+        }
+
+        .location-badge {
+            font-size: 12px;
+            color: #202124;
+            background: #f1f3f4;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-top: 6px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .my-calendars {
+            font-size: 14px;
+            font-weight: 500;
+            color: #3c4043;
+        }
+
+        .cal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        /* Right Content Area (Grid) */
+        .calendar-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            background: #ffffff;
+            padding: 8px;
+        }
+
+        #pdf-content {
+            background: #ffffff;
+            padding: 10px;
+        }
+
+        .month-section {
+            margin-bottom: 32px;
+        }
+
+        .month-header {
+            font-size: 22px;
+            font-weight: 400;
+            color: #3c4043;
+            padding: 16px 8px 8px 8px;
+            border-bottom: 1px solid #dadce0;
+            margin-bottom: 8px;
+            text-transform: capitalize;
+        }
+
+        .g-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-top: 1px solid #dadce0;
+            border-left: 1px solid #dadce0;
+            background-color: #dadce0;
+            gap: 1px;
+        }
+
+        .g-header-day {
+            background: #ffffff;
+            text-align: center;
+            padding: 8px 0;
+            font-size: 11px;
+            font-weight: 500;
+            color: #70757a;
+            text-transform: uppercase;
+        }
+
+        .g-day-cell {
+            background: #ffffff;
+            min-height: 145px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            transition: min-height 0.2s ease;
+        }
+
+        .g-day-cell.zoomed {
+            min-height: 220px;
+        }
+
+        .g-day-cell.empty {
+            background: #f8f9fa;
+        }
+
+        .g-day-cell.today {
+            background: #e8f0fe;
+        }
+
+        .day-num-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 26px;
+            height: 26px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .g-day-cell.today .day-num-wrapper {
+            background: #1a73e8;
+            color: white;
+            border-radius: 50%;
+        }
+
+        /* Efecto de Cruz para días pasados */
+        .g-day-cell.crossed-out {
+            background: #fcfcfc;
+        }
+
+        .g-day-cell.crossed-out::after {
+            content: "✕";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 75px;
+            color: rgba(217, 83, 79, 0.25);
+            font-weight: 300;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .g-day-cell.crossed-out .g-event {
+            opacity: 0.6;
+        }
+
+        /* Event Chips */
+        .g-event {
+            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            line-height: 1.2;
+            position: relative;
+            z-index: 2;
+        }
+
+        .ev-presencial { background-color: #1a73e8; color: white; border-left: 3px solid #0d47a1; }
+        .ev-teletrabajo { background-color: #0f9d58; color: white; border-left: 3px solid #0b6636; }
+        .ev-vacaciones { background-color: #5f6368; color: white; border-left: 3px solid #3c4043; }
+
+        /* Estilos para el contenedor optimizado del PDF (Formato de Reporte Oficial) */
+        #pdf-text-template {
+            display: none;
+            padding: 30px;
+            color: #202124;
+            background: #ffffff;
+        }
+        #pdf-text-template .pdf-header {
+            border-bottom: 3px solid #1a73e8;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        #pdf-text-template h1 { font-size: 22px; color: #1a73e8; text-transform: uppercase; margin-bottom: 4px; }
+        #pdf-text-template .pdf-subtitle { font-size: 14px; color: #5f6368; font-weight: 500; }
+        
+        /* Tabla del PDF mejorado */
+        .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .pdf-table th {
+            background-color: #f1f3f4;
+            color: #202124;
+            text-align: left;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border-bottom: 2px solid #dadce0;
+        }
+        .pdf-table td {
+            padding: 10px;
+            font-size: 12px;
+            border-bottom: 1px solid #dadce0;
+            color: #3c4043;
+        }
+        .pdf-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .pdf-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            color: white;
+        }
+        .bg-p { background-color: #1a73e8; }
+        .bg-t { background-color: #0f9d58; }
+        .bg-v { background-color: #5f6368; }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <div class="google-header">
+        <div class="header-left">
+            <div class="calendar-logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/1/16/Universidad-europea-logo_poc9mEM.2e16d0ba.fill-767x384.png" alt="Logo Universidad Europea">
+                <span>Calendario de Prácticas 2026</span>
+            </div>
+            <div class="user-pill">Álvaro Soto Aguilar</div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn-google secondary" id="btn-zoom" onclick="toggleZoomCalendar()">Ampliar Vista</button>
+            <button class="btn-google" onclick="exportToPDF()">Descargar PDF Optimizado</button>
+        </div>
+    </div>
+
+    <!-- Main Workspace Matrix -->
+    <div class="main-wrapper">
+        <!-- Sidebar Controls -->
+        <div class="sidebar" id="sidebar-panel">
+            <div>
+                <div id="side-clock" class="sidebar-clock">--:--:--</div>
+                <div id="side-date" class="sidebar-date">---, -- de ---</div>
+                <div class="location-badge">📍 Villaviciosa de Odón, Madrid</div>
+            </div>
+
+            <div>
+                <div class="my-calendars">Mis calendarios</div>
+                <div class="cal-checkbox">
+                    <input type="checkbox" checked disabled style="accent-color: #1a73e8;">
+                    <span>Prácticas Presenciales (Julio)</span>
+                </div>
+                <div class="cal-checkbox">
+                    <input type="checkbox" checked disabled style="accent-color: #0f9d58;">
+                    <span>Prácticas Teletrabajo (Agosto)</span>
+                </div>
+                <div class="cal-checkbox">
+                    <input type="checkbox" checked disabled style="accent-color: #5f6368;">
+                    <span>Vacaciones 🌴</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Google Calendar Central Feed View -->
+        <div class="calendar-container">
+            <div id="pdf-content">
+                <!-- Los bloques del calendario se inyectan dinámicamente aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Oculto auxiliar para estructurar la tabla del PDF -->
+    <div id="pdf-text-template"></div>
+
+    <script>
+        function startLiveClock() {
+            const clockEl = document.getElementById('side-clock');
+            const dateEl = document.getElementById('side-date');
+            
+            function refreshTime() {
+                const now = new Date();
+                clockEl.innerText = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                dateEl.innerText = now.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+            }
+            setInterval(refreshTime, 1000);
+            refreshTime();
+        }
+
+        const configMeses = [
+            { idx: 6, nombre: "julio de 2026", dias: 31, anio: 2026 },
+            { idx: 7, nombre: "agosto de 2026", dias: 31, anio: 2026 }
+        ];
+
+        const feed = document.getElementById('pdf-content');
+        
+        const hoy = new Date();
+        const hoySoloFecha = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+        configMeses.forEach(mes => {
+            const section = document.createElement('div');
+            section.className = 'month-section';
+
+            const header = document.createElement('div');
+            header.className = 'month-header';
+            header.innerText = mes.nombre;
+            section.appendChild(header);
+
+            const grid = document.createElement('div');
+            grid.className = 'g-calendar-grid';
+
+            const diasSemana = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+            diasSemana.forEach(d => {
+                const hCell = document.createElement('div');
+                hCell.className = 'g-header-day';
+                hCell.innerText = d;
+                grid.appendChild(hCell);
+            });
+
+            const primerDiaIndex = new Date(mes.anio, mes.idx, 1).getDay();
+            const offset = primerDiaIndex === 0 ? 6 : primerDiaIndex - 1;
+
+            for (let i = 0; i < offset; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'g-day-cell empty';
+                grid.appendChild(emptyCell);
+            }
+
+            for (let dia = 1; dia <= mes.dias; dia++) {
+                const currentTargetDate = new Date(mes.anio, mes.idx, dia);
+                const cell = document.createElement('div');
+                cell.className = 'g-day-cell';
+
+                const esHoy = (currentTargetDate.getDate() === hoy.getDate() && 
+                               currentTargetDate.getMonth() === hoy.getMonth() && 
+                               currentTargetDate.getFullYear() === hoy.getFullYear());
+
+                if (esHoy) {
+                    cell.classList.add('today');
+                } else if (currentTargetDate < hoySoloFecha) {
+                    cell.classList.add('crossed-out');
+                }
+
+                const numWrapper = document.createElement('div');
+                numWrapper.className = 'day-num-wrapper';
+                numWrapper.innerText = dia;
+                cell.appendChild(numWrapper);
+
+                const esFinDeSemana = (currentTargetDate.getDay() === 0 || currentTargetDate.getDay() === 6);
+
+                if (mes.idx === 6) {
+                    // Julio
+                    if (!esFinDeSemana) {
+                        const evP = document.createElement('div');
+                        evP.className = 'g-event ev-presencial';
+                        evP.innerText = '🏢 08:30-14:30 Presencial';
+                        cell.appendChild(evP);
+                    }
+                } else if (mes.idx === 7) {
+                    // Agosto
+                    if (dia >= 10 && dia <= 16) {
+                        // Rango de Vacaciones obligadas (del 10 al 16 de agosto)
+                        if (!esFinDeSemana) {
+                            const evV = document.createElement('div');
+                            evV.className = 'g-event ev-vacaciones';
+                            evV.innerText = '🌴 Vacaciones';
+                            cell.appendChild(evV);
+                        }
+                    } else if (!esFinDeSemana) {
+                        // Días laborables normales de agosto (Teletrabajo)
+                        const evT = document.createElement('div');
+                        evT.className = 'g-event ev-teletrabajo';
+                        evT.innerText = '💻 08:30-14:30 Teletrabajo';
+                        cell.appendChild(evT);
+                    }
+                }
+
+                grid.appendChild(cell);
+            }
+
+            section.appendChild(grid);
+            feed.appendChild(section);
+        });
+
+        function toggleZoomCalendar() {
+            const sidebar = document.getElementById('sidebar-panel');
+            const cells = document.querySelectorAll('.g-day-cell');
+            const btn = document.getElementById('btn-zoom');
+            const isExpanded = sidebar.classList.toggle('collapsed');
+            
+            cells.forEach(c => c.classList.toggle('zoomed', isExpanded));
+            btn.innerText = isExpanded ? "Reducir Vista" : "Ampliar Vista";
+        }
+
+        // Generación del PDF con formato de reporte mejorado y filtro desde el 8 de Julio
+        function exportToPDF() {
+            const pdfContainer = document.getElementById('pdf-text-template');
+            pdfContainer.innerHTML = ''; 
+
+            // Cabecera Corporativa del Reporte
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'pdf-header';
+            headerDiv.innerHTML = `
+                <h1>Reporte de Asistencia y Planificación de Prácticas</h1>
+                <div class="pdf-subtitle">Alumno: Álvaro Soto Aguilar | Centro de Estudios: Universidad Europea</div>
+            `;
+            pdfContainer.appendChild(headerDiv);
+
+            // Crear tabla estilizada
+            const table = document.createElement('table');
+            table.className = 'pdf-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Fecha</th>
+                        <th style="width: 25%;">Modalidad</th>
+                        <th style="width: 45%;">Detalle de Actividad</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-table-body"></tbody>
+            `;
+            pdfContainer.appendChild(table);
+            const tbody = document.getElementById('pdf-table-body');
+
+            const diasTexto = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const mesesTexto = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+            // Fecha límite estricta: 8 de Julio de 2026
+            const fechaLimiteFiltro = new Date(2026, 6, 8); 
+
+            configMeses.forEach(mes => {
+                for (let dia = 1; dia <= mes.dias; dia++) {
+                    const fechaActual = new Date(mes.anio, mes.idx, dia);
+                    
+                    // FILTRO: Si la fecha evaluada es anterior al 8 de Julio, se salta y no se añade al PDF
+                    if (fechaActual < fechaLimiteFiltro) {
+                        continue;
+                    }
+
+                    const esFinDeSemana = (fechaActual.getDay() === 0 || fechaActual.getDay() === 6);
+                    let modalidadBadge = "";
+                    let detalleActividad = "";
+
+                    if (!esFinDeSemana) {
+                        if (mes.idx === 6) {
+                            modalidadBadge = `<span class="pdf-badge bg-p">Presencial</span>`;
+                            detalleActividad = "Horario 08:30 a 14:30 - Actividad presencial en campus";
+                        } else if (mes.idx === 7) {
+                            if (dia >= 10 && dia <= 16) {
+                                modalidadBadge = `<span class="pdf-badge bg-v">Vacaciones</span>`;
+                                detalleActividad = "Período vacacional autorizado";
+                            } else {
+                                modalidadBadge = `<span class="pdf-badge bg-t">Teletrabajo</span>`;
+                                detalleActividad = "Horario 08:30 a 14:30 - Actividad remota conectada";
+                            }
+                        }
+                    }
+
+                    // Solo añadimos filas de los días que tengan actividad registrada (saltando fines de semana)
+                    if (detalleActividad !== "") {
+                        const tr = document.createElement('tr');
+                        const nameDiaSemana = diasTexto[fechaActual.getDay()];
+                        
+                        tr.innerHTML = `
+                            <td><strong>${nameDiaSemana} ${dia} de ${mesesTexto[mes.idx]}</strong></td>
+                            <td>${modalidadBadge}</td>
+                            <td>${detalleActividad}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                }
+            });
+
+            pdfContainer.style.display = 'block';
+
+            const opciones = {
+                margin:       15,
+                filename:     'Reporte_Practicas_Soto_Aguilar.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opciones).from(pdfContainer).save().then(() => {
+                pdfContainer.style.display = 'none'; 
+            });
+        }
+
+        startLiveClock();
+    </script>
+</body>
+</html>
